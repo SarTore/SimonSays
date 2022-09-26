@@ -1,0 +1,101 @@
+#define NOTE_A4  440
+#define NOTE_D5  587
+#define NOTE_G5  784
+#define NOTE_E5  659
+
+int lamps[4] = {2, 3, 4, 5};
+int buttons[4] = {8, 9, 10, 11};
+int tones[4] = {NOTE_A4, NOTE_D5, NOTE_G5, NOTE_E5};
+int shownLamps[3] = {};
+int currentLevel = 0;
+int buzzer = 6;
+int buttonState = 0;
+int lastButtonStates[4] = {0, 0, 0, 0};
+
+void setup() {
+
+  randomSeed(analogRead(0));
+
+  for (int i = 0; i < 4; ++i)
+  {
+    pinMode(lamps[i], OUTPUT);
+    pinMode(buttons[i], INPUT);
+  }
+  pinMode(buzzer, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+  Serial.begin(9600);
+}
+
+void blinkLamp(int lamp)
+{
+  digitalWrite(lamps[lamp], HIGH);
+  delay(500);
+  digitalWrite(lamps[lamp], LOW);
+  delay(200);
+}
+
+void blinkPin(int pin)
+{
+  digitalWrite(pin, HIGH);
+  delay(500);
+  digitalWrite(pin, LOW);
+  delay(200);
+}
+
+int buttonPressed(uint8_t button) {
+  static uint16_t lastStates = 0;
+  uint8_t state = digitalRead(button);
+  Serial.println("Ola");
+  if (state != ((lastStates >> button) & 1)) {
+    lastStates ^= 1 << button;
+    return state == HIGH;
+  }
+  return false;
+}
+void loop() {
+  int randomLamp = random(4);
+  shownLamps[currentLevel] = randomLamp;
+
+  //Escrever as luzes que acendem
+  for (int i = 0; i <= currentLevel; ++i)
+  {
+    int lamp = shownLamps[i];
+    blinkLamp(lamp);
+    tone(buzzer, tones[lamp], 50);
+  }
+  
+  //Ler cada jogada
+  for (int i = 0; i <= currentLevel; ++i)
+  {
+    int input = 0;
+    while (!digitalRead(buttons[0]) && !digitalRead(buttons[1]) && !digitalRead(buttons[2]) && !digitalRead(buttons[3])) {
+      delay(100);
+    }
+      for (int i = 0; i < 4; ++i){
+        buttonState = digitalRead(buttons[i]);
+
+        if (buttonState != lastButtonStates[i])
+        {
+          if (buttonState == HIGH)
+          {
+            input = i;
+            
+          }
+    
+          delay(50);
+        }
+    
+        lastButtonStates[i] = buttonState;
+      
+      }
+    if(input !=  i){
+      Serial.println(input);
+      Serial.println(i);
+      Serial.println("Perdeu");
+    }
+  }
+  ++currentLevel;
+
+  delay(2000);
+  blinkLamp(LED_BUILTIN);
+}
