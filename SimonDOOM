@@ -1,0 +1,147 @@
+#define NOTE_A4  440
+#define NOTE_D5  587
+#define NOTE_G5  784
+#define NOTE_E5  659
+#define N 4
+
+int lamps[4] = {2, 3, 4, 5};
+int buttons[4] = {8, 9, 10, 11};
+int tones[4] = {NOTE_A4, NOTE_D5, NOTE_G5, NOTE_E5};
+int shownLamps[20] = {};
+int currentLevel = 0;
+int buzzer = 6;
+int buttonState = 0;
+int buttonStates[] = {0, 0, 0, 0};
+int lastButtonStates[4] = {0, 0, 0, 0};
+
+int chosenDifficulty = 0;
+
+bool hasShownMessage = false;
+bool startGame = false;
+bool lostGame = false;
+
+void setup() {
+
+  randomSeed(analogRead(0));
+
+  for (int i = 0; i < N; ++i)
+  {
+    pinMode(lamps[i], OUTPUT);
+    pinMode(buttons[i], INPUT);
+  }
+  pinMode(buzzer, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+  Serial.begin(9600);
+  
+}
+
+void blinkLamp(int lamp)
+{
+  Serial.println(chosenDifficulty);
+  digitalWrite(lamps[lamp], HIGH);
+  delay(chosenDifficulty == 48 ? 1500 : 500);
+  digitalWrite(lamps[lamp], LOW);
+  delay(chosenDifficulty == 48 ? 600 : 200);
+}
+
+void blinkPin(int pin)
+{
+  digitalWrite(pin, HIGH);
+  delay(500);
+  digitalWrite(pin, LOW);
+  delay(200);
+}
+
+void loop() {
+
+  if (!hasShownMessage)
+  {
+    Serial.println("Escolha a dificuldade");
+    Serial.println("0. Little baby, gonna call your momma? <:C");
+    Serial.println("1. DEMON SLAYER >:D");
+    hasShownMessage = true;
+  }
+
+  if (Serial.available() > 0 && !startGame) {
+    chosenDifficulty = Serial.read();
+    startGame = true;
+  }
+
+  if (startGame)
+  {
+    int randomLamp = random(N);
+    shownLamps[currentLevel] = randomLamp;
+  
+    //Escrever as luzes que acendem
+    for (int i = 0; i <= currentLevel; ++i)
+    {
+      int lamp = shownLamps[i];
+      blinkLamp(lamp);
+      tone(buzzer, tones[lamp], 50);
+    }
+  
+    //Ler cada jogada
+    for (int i = 0; i <= currentLevel; ++i)
+    {
+      int input = 0;
+  
+      while (1) {
+  
+        bool differentStateAndHigh = false;
+  
+        for (int j = 0; j < N; ++j)
+        {
+          buttonStates[j] = digitalRead(buttons[j]);
+  
+          if (buttonStates[j] != lastButtonStates[j])
+          {
+            if (buttonStates[j] == HIGH)
+            {
+              differentStateAndHigh = true;
+            }
+            if (buttonStates[j] == LOW)
+            {
+              lastButtonStates[j] = LOW;
+            }
+          }
+        }
+  
+        delay(50);
+  
+        if (differentStateAndHigh)
+        {
+          break;
+        }
+      }
+  
+      for (int j = 0; j < N; ++j) {
+        buttonState = buttonStates[j];
+  
+        if (buttonState != lastButtonStates[j])
+        {
+          if (buttonState == HIGH)
+          {
+            input = j;
+          }
+        }
+  
+        lastButtonStates[j] = buttonState;
+      }
+      if (input !=  shownLamps[i]) {
+        Serial.print("input ");
+        Serial.println(input);
+        Serial.print("i ");
+        Serial.println(shownLamps[i]);
+        Serial.println("Perdeu");
+        lostGame = true;
+        startGame = false;
+        hasShownMessage = false;
+      }
+  
+      delay(50);
+    }
+    ++currentLevel;
+  }
+
+  //delay(2000);
+}
